@@ -1,3 +1,3 @@
 #include <bits/stdc++.h>
 
-// Paskal Gay
+using namespace std;
