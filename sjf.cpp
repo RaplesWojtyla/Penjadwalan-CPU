@@ -1,85 +1,66 @@
-#include <iostream>
-#include <vector>
-#include <algorithm>
-#include <iomanip>
+#include <bits/stdc++.h>
+using namespace std;
 
-struct Proses {
-    int id;
-    int burstTime;
-    int waitingTime;
-    int turnaroundTime;
-};
-
-bool bandingkanBurstTime(const Proses& a, const Proses& b) {
-    return a.burstTime < b.burstTime;
+void hitungWaitingTime(const vector<int>& burstTime, vector<int>& waitingTime) {
+    waitingTime[0] = 0;
+    for (int i = 1; i < (int)burstTime.size(); i++)
+        waitingTime[i] = waitingTime[i-1] + burstTime[i-1];
 }
 
-void hitungWaktu(std::vector<Proses>& prosesList) {
-    prosesList[0].waitingTime = 0;
-    prosesList[0].turnaroundTime = prosesList[0].burstTime;
-    for (size_t i = 1; i < prosesList.size(); ++i) {
-        prosesList[i].waitingTime = prosesList[i - 1].waitingTime + prosesList[i - 1].burstTime;
-        prosesList[i].turnaroundTime = prosesList[i].burstTime + prosesList[i].waitingTime;
+void hitungTurnaroundTime(const vector<int>& burstTime, 
+                          const vector<int>& waitingTime,
+                          vector<int>& turnaroundTime) {
+    for (int i = 0; i < (int)burstTime.size(); i++)
+        turnaroundTime[i] = burstTime[i] + waitingTime[i];
+}
+
+void sjfScheduling(vector<int> burstTime) {
+    int n = burstTime.size();
+    vector<int> waitingTime(n), turnaroundTime(n);
+
+    // Urutkan burst time (proses SJF)
+    vector<pair<int, int>> proses; // pair<burstTime, id>
+    for (int i = 0; i < n; i++)
+        proses.push_back({burstTime[i], i+1});
+
+    sort(proses.begin(), proses.end());
+
+    // Ambil burst time terurut
+    for (int i = 0; i < n; i++)
+        burstTime[i] = proses[i].first;
+
+    hitungWaitingTime(burstTime, waitingTime);
+    hitungTurnaroundTime(burstTime, waitingTime, turnaroundTime);
+
+    cout << "\n--- Menghitung Penjadwalan SJF ---\n\n";
+    cout << "Proses\tBurst Time\tWaiting Time\tTurnaround Time\n";
+
+    double totalWT = 0, totalTAT = 0;
+    for (int i = 0; i < n; i++) {
+        cout << "P" << proses[i].second << "\t"
+             << burstTime[i]          << "\t\t"
+             << waitingTime[i]        << "\t\t"
+             << turnaroundTime[i]     << "\n";
+        totalWT  += waitingTime[i];
+        totalTAT += turnaroundTime[i];
     }
+    cout << fixed << setprecision(5)
+         << "\nRata-rata Waiting Time    = " << (totalWT/n)  
+         << "\nRata-rata Turnaround Time = " << (totalTAT/n) 
+         << "\n";
 }
 
 int main() {
-    
-    int jumlahProses;
-    std::cout << "Masukkan jumlah proses: ";
-    std::cin >> jumlahProses;
+    int n;
+    cout << "Masukkan jumlah proses: ";
+    cin  >> n;
 
-    // Membuat vector kosong untuk menampung proses yang diinput
-    std::vector<Proses> proses; 
-    
-    // Loop untuk meminta input Burst Time untuk setiap proses
-    for (int i = 0; i < jumlahProses; ++i) {
-        int burstTimeInput;
-        std::cout << "Masukkan Burst Time untuk Proses " << i + 1 << ": ";
-        std::cin >> burstTimeInput;
-        // Menambahkan proses baru ke dalam vector
-        // ID diisi otomatis, WT dan TAT diinisialisasi 0
-        proses.push_back({i + 1, burstTimeInput, 0, 0}); 
-    }
-    
-    std::cout << "\n--- Menghitung Penjadwalan SJF ---\n\n";
-
-    // --- AKHIR BAGIAN MODIFIKASI ---
-
-
-    // Sisa dari kode tidak perlu diubah, karena akan bekerja
-    // dengan data yang sudah diisi oleh pengguna ke dalam vector 'proses'.
-
-    // 1. Mengurutkan proses berdasarkan Burst Time (prinsip utama SJF)
-    std::sort(proses.begin(), proses.end(), bandingkanBurstTime);
-
-    // 2. Menghitung Waiting Time dan Turnaround Time untuk urutan SJF
-    hitungWaktu(proses);
-
-    // 3. Menampilkan hasil
-    std::cout << std::left << std::setw(10) << "Proses"
-              << std::left << std::setw(15) << "Burst Time"
-              << std::left << std::setw(15) << "Waiting Time"
-              << std::left << std::setw(15) << "Turnaround Time" << std::endl;
-
-    float totalWaitingTime = 0;
-    float totalTurnaroundTime = 0;
-
-    for (const auto& p : proses) {
-        std::cout << std::left << std::setw(10) << ("P" + std::to_string(p.id))
-                  << std::left << std::setw(15) << p.burstTime
-                  << std::left << std::setw(15) << p.waitingTime
-                  << std::left << std::setw(15) << p.turnaroundTime << std::endl;
-        totalWaitingTime += p.waitingTime;
-        totalTurnaroundTime += p.turnaroundTime;
+    vector<int> burstTime(n);
+    for (int i = 0; i < n; i++) {
+        cout << "Masukkan Burst Time untuk Proses " << (i+1) << ": ";
+        cin  >> burstTime[i];
     }
 
-    float rataRataWaitingTime = totalWaitingTime / proses.size();
-    float rataRataTurnaroundTime = totalTurnaroundTime / proses.size();
-
-    std::cout << std::endl;
-    std::cout << "Rata-rata Waiting Time = " << rataRataWaitingTime << std::endl;
-    std::cout << "Rata-rata Turnaround Time = " << rataRataTurnaroundTime << std::endl;
-
+    sjfScheduling(burstTime);
     return 0;
 }
