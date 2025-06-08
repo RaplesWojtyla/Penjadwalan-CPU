@@ -24,7 +24,7 @@ using i64 = long long;
 using ull = unsigned long long;
 using namespace std;
 
-template<typename... Args>void print(const Args &...args){bool f = true;auto pws = [&](const auto &arg){if (!f) cout << ' ';f = false;cout << arg;};(pws(args), ...);}
+template<typename ...Args>void print(const Args &...args){bool f=true;auto pws=[&](const auto &arg){if(!f)cout<<' ';f=false;cout<<arg;};(pws(args),...);}
 template<typename T>void num_input(T &num){auto c = getchar();num = 0;while (c >= '0' and c <= '9'){num = num * 10 + c - '0';c = getchar();}}
 
 
@@ -195,7 +195,7 @@ int main()
     FOR(i, 0, n)
 	{
         int arrival, burst;
-		
+
         print("Proses", i + 1, ":\n");
         print("	Waktu Kedatangan (Arrival Time): ");
         num_input(arrival);
