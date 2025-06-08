@@ -145,7 +145,7 @@ public:
     {
         // Urutkan proses berdasarkan waktu mulai eksekusi (startTime)
         sort(processes.begin(), processes.end(), [](const Process &a, const Process &b) {
-            return a.getStartTime() < b.getStartTime();
+            return a.id < b.id;
         });
 
         float totalWaitingTime = 0;
