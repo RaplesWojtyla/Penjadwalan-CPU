@@ -136,19 +136,19 @@ void runRoundRobin(vector<Process> &processes, int q)
 		totalResponseTime += p.responseTime;
 		totalTurnaroundTime += p.turnaroundTime;
 
-		std::cout << "| " << std::setw(3) << p.id
-                  << " | " << std::setw(7) << p.arrivalTime
-                  << " | " << std::setw(5) << p.burstTime
-                  << " | " << std::setw(8) << p.priority
-                  << " | " << std::setw(10) << p.completionTime
-                  << " | " << std::setw(7) << p.waitingTime
-                  << " | " << std::setw(10) << p.turnaroundTime
-                  << " | " << std::setw(8) << p.responseTime << " |\n";
+		std::cout << "| " << setw(3) << p.id
+                  << " | " << setw(7) << p.arrivalTime
+                  << " | " << setw(5) << p.burstTime
+                  << " | " << setw(8) << p.priority
+                  << " | " << setw(10) << p.completionTime
+                  << " | " << setw(7) << p.waitingTime
+                  << " | " << setw(10) << p.turnaroundTime
+                  << " | " << setw(8) << p.responseTime << " |\n";
 	}
 
 	print("------------------------------------------------------------------------------------------------\n");
 
-	std::cout << std::fixed << std::setprecision(2);
+	cout << fixed << setprecision(2);
 	print("Rata-rata Waktu Tunggu (Average Waiting Time):", totalWaitingTime / n, '\n');
 	print("Rata-rata Waktu Putar (Average Turnaround Time):",totalTurnaroundTime / n, '\n');
 	print("Rata-rata Waktu Respons (Average Response Time): ", totalResponseTime / n, '\n');
