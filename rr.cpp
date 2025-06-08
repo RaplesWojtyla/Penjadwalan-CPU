@@ -69,6 +69,11 @@ class RoundRobinScheduler
 			return a.arrivalTime < b.arrivalTime;
 		}
 
+		static bool compareByPId(const Process &a, const Process &b)
+		{
+			return a.id < b.id;
+		}
+
 		void printReadyQueue(queue<int> q)
 		{
 			if (q.empty())
@@ -189,7 +194,7 @@ class RoundRobinScheduler
 
 		void printResult()
 		{
-			sort(processes.begin(), processes.end(), compareByArrivalTime);
+			sort(processes.begin(), processes.end(), compareByPId);
 			float totalWaitingTime = 0;
 			float totalTurnaroundTime = 0;
 			float totalResponseTime = 0;
