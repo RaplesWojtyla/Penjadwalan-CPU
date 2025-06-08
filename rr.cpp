@@ -68,6 +68,25 @@ class RoundRobinScheduler
 		{
 			return a.arrivalTime < b.arrivalTime;
 		}
+
+		void printReadyQueue(queue<int> q)
+		{
+			if (q.empty())
+			{
+				print("[Kosong]");
+				return;
+			}
+
+			print("[");
+			while(!q.empty())
+			{
+				print("P" + to_string(processes[q.front()].id));
+				q.pop();
+
+				if (!q.empty()) print(", ");
+			}
+			print("]");
+		}
 	
 	public:
 		RoundRobinScheduler(vector<Process> initProcesses, int q)
@@ -87,11 +106,18 @@ class RoundRobinScheduler
 			int n = processes.size();
 			queue<int> ready;
 
-			sort(processes.begin(), processes.end(), compareByArrivalTime);
+			sort(all(processes), compareByArrivalTime);
 
 			int ct = 0;
-			int cp = 0;
+			int cp = 0; 
 			int currProcessIdx = 0;
+
+			
+			print("\n--- Jejak Eksekusi Round Robin ---\n");
+			print("------------------------------------------------------------------------------------------\n");
+			cout << left << setw(8) << "Waktu" << "| " << setw(10) << "Proses" << "| " << setw(40) << "Kejadian" << "| " << "Isi Ready Queue\n";
+			print("------------------------------------------------------------------------------------------\n");
+
 
 			while (cp < n) 
 			{
@@ -103,7 +129,12 @@ class RoundRobinScheduler
 
 				if (ready.empty())
 				{
-					if (currProcessIdx < n) ct = processes[currProcessIdx].arrivalTime;
+					if (currProcessIdx < n) {
+						cout << left << setw(8) << ct << "| " << setw(10) << "-" << "| " << setw(40) << "CPU Idle..." << "| ";
+						printReadyQueue(ready);
+						print('\n');
+						ct = processes[currProcessIdx].arrivalTime;
+					}
 					else break;
 
 					continue;
@@ -111,6 +142,12 @@ class RoundRobinScheduler
 
 				int pId = ready.front();
 				ready.pop();
+
+				
+				string event = (processes[pId].responseTime == -1) ? "Memulai eksekusi" : "Melanjutkan eksekusi";
+				cout << left << setw(8) << ct << "| " << setw(10) << ("P" + to_string(processes[pId].id)) << "| " << setw(40) << event << "| ";
+				printReadyQueue(ready);
+				print('\n');
 
 				if (processes[pId].responseTime == -1) processes[pId].responseTime = ct - processes[pId].arrivalTime;
 
@@ -127,12 +164,25 @@ class RoundRobinScheduler
 
 				if (processes[pId].remainingBurstTime == 0)
 				{
+					cp++; 
 					processes[pId].completionTime = ct;
 					processes[pId].turnaroundTime = processes[pId].completionTime - processes[pId].arrivalTime;
 					processes[pId].waitingTime = processes[pId].turnaroundTime - processes[pId].burstTime;
+
+					cout << left << setw(8) << ct << "| " << setw(10) << ("P" + to_string(processes[pId].id)) << "| " << setw(40) << "Proses Selesai" << "| ";
+					printReadyQueue(ready);
+					print('\n');
 				}
-				else ready.push(pId);
+				else 
+				{
+					ready.push(pId); 
+					
+					cout << left << setw(8) << ct << "| " << setw(10) << ("P" + to_string(processes[pId].id)) << "| " << setw(40) << "Quantum habis, kembali ke antrian" << "| ";
+					printReadyQueue(ready);
+					print('\n');
+				}
 			}
+			print("------------------------------------------------------------------------------------------\n");
 
 			this->lastCompletionTime = ct;
 		}
