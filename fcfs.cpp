@@ -1,55 +1,161 @@
 #include <bits/stdc++.h>
+#define FOR(a, b, c) for (int a = b; a < c; ++a)
+#define mFOR(a, b, c) for (int a = b; a > c; --a)
+#define pii pair<int, int>
+#define all(x) x.begin(), x.end()
+#define pb push_back
+#define sit set<int>::iterator
+using i64 = long long;
+using ull = unsigned long long;
 using namespace std;
 
-void hitungWaitingTime(const vector<int>& burstTime, vector<int>& waitingTime) {
-    waitingTime[0] = 0;
-    for (int i = 1; i < (int)burstTime.size(); i++)
-        waitingTime[i] = waitingTime[i-1] + burstTime[i-1];
+template<typename ...Args> void print(const Args &...args) {
+	bool f = true;
+	auto pws = [&](const auto &arg) {
+		if (!f) cout << ' ';
+		f = false;
+		cout << arg;
+	};
+	(pws(args), ...);
 }
 
-void hitungTurnaroundTime(const vector<int>& burstTime, 
-                          const vector<int>& waitingTime,
-                          vector<int>& turnaroundTime) {
-    for (int i = 0; i < (int)burstTime.size(); i++)
-        turnaroundTime[i] = burstTime[i] + waitingTime[i];
+template<typename T> void num_input(T &num) {
+	auto c = getchar(); num = 0;
+	while (c >= '0' and c <= '9') {
+		num = num * 10 + c - '0';
+		c = getchar();
+	}
 }
 
-void fcfsScheduling(const vector<int>& burstTime) {
-    int n = burstTime.size();
-    vector<int> waitingTime(n), turnaroundTime(n);
+struct Process {
+	int id;
+	int arrivalTime;
+	int burstTime;
+	int priority;
 
-    hitungWaitingTime(burstTime, waitingTime);
-    hitungTurnaroundTime(burstTime, waitingTime, turnaroundTime);
+	int startTime;
+	int completionTime;
+	int waitingTime;
+	int turnaroundTime;
+	int responseTime;
 
-    cout << "\n--- Menghitung Penjadwalan FCFS ---\n\n";
-    cout << "Proses\tBurst Time\tWaiting Time\tTurnaround Time\n";
+	Process(int id, int at, int bt, int p = 0) {
+		this->id = id;
+		this->arrivalTime = at;
+		this->burstTime = bt;
+		this->priority = p;
 
-    double totalWT = 0, totalTAT = 0;
-    for (int i = 0; i < n; i++) {
-        cout << "P" << (i+1) << "\t"
-             << burstTime[i]    << "\t\t"
-             << waitingTime[i]  << "\t\t"
-             << turnaroundTime[i] << "\n";
-        totalWT  += waitingTime[i];
-        totalTAT += turnaroundTime[i];
-    }
-    cout << fixed << setprecision(5)
-         << "\nRata-rata Waiting Time    = " << (totalWT/n)  
-         << "\nRata-rata Turnaround Time = " << (totalTAT/n) 
-         << "\n";
-}
+		this->startTime = 0;
+		this->completionTime = 0;
+		this->waitingTime = 0;
+		this->turnaroundTime = 0;
+		this->responseTime = -1;
+	}
+};
+
+class FCFSScheduler {
+	private:
+		vector<Process> processes;
+
+		static bool compareByArrivalTime(const Process &a, const Process &b) {
+			return a.arrivalTime < b.arrivalTime;
+		}
+
+	public:
+		FCFSScheduler(vector<Process> initProcesses) {
+			this->processes = initProcesses;
+		}
+
+		void run() {
+			if (processes.empty()) {
+				print("Tidak ada proses untuk dijadwalkan.\n");
+				return;
+			}
+
+			int n = processes.size();
+			sort(all(processes), compareByArrivalTime);
+
+			int ct = 0;
+
+			for (Process &p : processes) {
+				if (ct < p.arrivalTime) {
+					ct = p.arrivalTime;
+				}
+
+				p.startTime = ct;
+				p.responseTime = ct - p.arrivalTime;
+				ct += p.burstTime;
+
+				p.completionTime = ct;
+				p.turnaroundTime = p.completionTime - p.arrivalTime;
+				p.waitingTime = p.turnaroundTime - p.burstTime;
+			}
+		}
+
+		void printResult() {
+			sort(processes.begin(), processes.end(), compareByArrivalTime);
+			float totalWaitingTime = 0;
+			float totalTurnaroundTime = 0;
+			float totalResponseTime = 0;
+			int n = (int) processes.size();
+
+			print("\n--- Hasil Penjadwalan FCFS ---\n");
+			print("------------------------------------------------------------------------------------------------\n");
+			print("| PID | Arrival | Burst | Priority | Completion | Waiting | Turnaround | Response |\n");
+			print("------------------------------------------------------------------------------------------------\n");
+
+			for (const Process &p : processes) {
+				totalWaitingTime += p.waitingTime;
+				totalResponseTime += p.responseTime;
+				totalTurnaroundTime += p.turnaroundTime;
+
+				std::cout << "| " << setw(3) << p.id
+						<< " | " << setw(7) << p.arrivalTime
+						<< " | " << setw(5) << p.burstTime
+						<< " | " << setw(8) << p.priority
+						<< " | " << setw(10) << p.completionTime
+						<< " | " << setw(7) << p.waitingTime
+						<< " | " << setw(10) << p.turnaroundTime
+						<< " | " << setw(8) << p.responseTime << " |\n";
+			}
+
+			print("------------------------------------------------------------------------------------------------\n");
+
+			cout << fixed << setprecision(2);
+			print("Rata-rata Waktu Tunggu (Average Waiting Time):", totalWaitingTime / n, '\n');
+			print("Rata-rata Waktu Putar (Average Turnaround Time):", totalTurnaroundTime / n, '\n');
+			print("Rata-rata Waktu Respons (Average Response Time):", totalResponseTime / n, '\n');
+
+			float totalTime = processes[n - 1].completionTime - processes[0].arrivalTime;
+			if (totalTime > 0) print("Throughput:", static_cast<float>(n) / totalTime, "proses/unit waktu\n");
+			else print("Throughput: N/A\n");
+		}
+};
 
 int main() {
-    int n;
-    cout << "Masukkan jumlah proses: ";
-    cin  >> n;
+	vector<Process> processes;
+	int n;
 
-    vector<int> burstTime(n);
-    for (int i = 0; i < n; i++) {
-        cout << "Masukkan Burst Time untuk Proses " << (i+1) << ": ";
-        cin  >> burstTime[i];
-    }
+	print("Masukkan jumlah proses: ");
+	num_input(n);
 
-    fcfsScheduling(burstTime);
-    return 0;
+	FOR(i, 0, n) {
+		int arrival, burst;
+
+		print("Proses", i + 1, ":\n");
+		print("	Waktu Kedatangan (Arrival Time): ");
+		num_input(arrival);
+
+		print("	Waktu Eksekusi (Burst Time): ");
+		num_input(burst);
+
+		processes.emplace_back(i + 1, arrival, burst);
+	}
+
+	FCFSScheduler scheduler(processes);
+
+	scheduler.run();
+	scheduler.printResult();
+
+	return 0;
 }
