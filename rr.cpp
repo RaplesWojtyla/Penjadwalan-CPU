@@ -195,11 +195,14 @@ int main()
     FOR(i, 0, n)
 	{
         int arrival, burst;
+		
         print("Proses", i + 1, ":\n");
         print("	Waktu Kedatangan (Arrival Time): ");
         num_input(arrival);
+
         print("	Waktu Eksekusi (Burst Time): ");
         num_input(burst);
+
         processes.emplace_back(i + 1, arrival, burst);
     }
 
