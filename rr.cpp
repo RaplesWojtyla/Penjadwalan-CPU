@@ -57,107 +57,128 @@ struct Process
 	}
 };
 
-bool compareByArrival(const Process &a, const Process &b)
+class RoundRobinScheduler
 {
-	return a.arrivalTime < b.arrivalTime;
-}
+	private:
+		vector<Process> processes;
+		int quantum;
+		int lastCompletionTime;
 
-void runRoundRobin(vector<Process> &processes, int q)
-{
-	if (processes.empty())
-	{
-		print("Tidak ada proses untuk dijadwalkan.\n");
-		return;
-	}
-
-	int n = processes.size();
-	queue<int> ready;
-
-	sort(processes.begin(), processes.end(), compareByArrival);
-
-	int ct = 0;
-	int cp = 0;
-	int currProcessIdx = 0;
-
-	while (cp < n) 
-	{
-		while (currProcessIdx < n && processes[currProcessIdx].arrivalTime <= ct)
+		static bool compareByArrivalTime(const Process &a, const Process &b)
 		{
-			ready.push(currProcessIdx);
-			++currProcessIdx;
+			return a.arrivalTime < b.arrivalTime;
+		}
+	
+	public:
+		RoundRobinScheduler(vector<Process> initProcesses, int q)
+		{
+			this->processes = initProcesses;
+			this->quantum = q;
 		}
 
-		if (ready.empty())
+		void run()
 		{
-			if (currProcessIdx < n) ct = processes[currProcessIdx].arrivalTime;
-			else break;
+			if (processes.empty())
+			{
+				print("Tidak ada proses untuk dijadwalkan.\n");
+				return;
+			}
 
-			continue;
+			int n = processes.size();
+			queue<int> ready;
+
+			sort(processes.begin(), processes.end(), compareByArrivalTime);
+
+			int ct = 0;
+			int cp = 0;
+			int currProcessIdx = 0;
+
+			while (cp < n) 
+			{
+				while (currProcessIdx < n && processes[currProcessIdx].arrivalTime <= ct)
+				{
+					ready.push(currProcessIdx);
+					++currProcessIdx;
+				}
+
+				if (ready.empty())
+				{
+					if (currProcessIdx < n) ct = processes[currProcessIdx].arrivalTime;
+					else break;
+
+					continue;
+				}
+
+				int pId = ready.front();
+				ready.pop();
+
+				if (processes[pId].responseTime == -1) processes[pId].responseTime = ct - processes[pId].arrivalTime;
+
+				int timeSlice = min(processes[pId].remainingBurstTime, quantum);
+
+				ct += timeSlice;
+				processes[pId].remainingBurstTime -= timeSlice;
+
+				while (currProcessIdx < n && processes[currProcessIdx].arrivalTime <= ct) 
+				{
+					ready.push(currProcessIdx);
+					++currProcessIdx;
+				}
+
+				if (processes[pId].remainingBurstTime == 0)
+				{
+					processes[pId].completionTime = ct;
+					processes[pId].turnaroundTime = processes[pId].completionTime - processes[pId].arrivalTime;
+					processes[pId].waitingTime = processes[pId].turnaroundTime - processes[pId].burstTime;
+				}
+				else ready.push(pId);
+			}
+
+			this->lastCompletionTime = ct;
 		}
 
-		int pId = ready.front();
-		ready.pop();
-
-		if (processes[pId].responseTime == -1) processes[pId].responseTime = ct - processes[pId].arrivalTime;
-
-		int timeSlice = min(processes[pId].remainingBurstTime, q);
-
-		ct += timeSlice;
-		processes[pId].remainingBurstTime -= timeSlice;
-
-		while (currProcessIdx < n && processes[currProcessIdx].arrivalTime <= ct) 
+		void printResult()
 		{
-			ready.push(currProcessIdx);
-			++currProcessIdx;
+			sort(processes.begin(), processes.end(), compareByArrivalTime);
+			float totalWaitingTime = 0;
+			float totalTurnaroundTime = 0;
+			float totalResponseTime = 0;
+			int n = (int) processes.size();
+
+			print("\n--- Hasil Penjadwalan Round Robin (Quantum =", quantum, ") ---\n");
+			print("------------------------------------------------------------------------------------------------\n");
+			print("| PID | Arrival | Burst | Priority | Completion | Waiting | Turnaround | Response |\n");
+			print("------------------------------------------------------------------------------------------------\n");
+
+			for (const Process &p: processes)
+			{
+				totalWaitingTime += p.waitingTime;
+				totalResponseTime += p.responseTime;
+				totalTurnaroundTime += p.turnaroundTime;
+
+				std::cout << "| " << setw(3) << p.id
+						<< " | " << setw(7) << p.arrivalTime
+						<< " | " << setw(5) << p.burstTime
+						<< " | " << setw(8) << p.priority
+						<< " | " << setw(10) << p.completionTime
+						<< " | " << setw(7) << p.waitingTime
+						<< " | " << setw(10) << p.turnaroundTime
+						<< " | " << setw(8) << p.responseTime << " |\n";
+			}
+
+			print("------------------------------------------------------------------------------------------------\n");
+
+			cout << fixed << setprecision(2);
+			print("Rata-rata Waktu Tunggu (Average Waiting Time):", totalWaitingTime / n, '\n');
+			print("Rata-rata Waktu Putar (Average Turnaround Time):",totalTurnaroundTime / n, '\n');
+			print("Rata-rata Waktu Respons (Average Response Time): ", totalResponseTime / n, '\n');
+
+			float totalTime = lastCompletionTime - processes[0].arrivalTime;
+
+			if (totalTime > 0) print("Throughput:", static_cast<float>(n) / totalTime, "proses/unit waktu\n");
+			else print("Throughput: N/A\n");
 		}
-
-		if (processes[pId].remainingBurstTime == 0)
-		{
-			processes[pId].completionTime = ct;
-			processes[pId].turnaroundTime = processes[pId].completionTime - processes[pId].arrivalTime;
-			processes[pId].waitingTime = processes[pId].turnaroundTime - processes[pId].burstTime;
-		}
-		else ready.push(pId);
-	}
-
-	sort(processes.begin(), processes.end(), compareByArrival);
-	float totalWaitingTime = 0;
-	float totalTurnaroundTime = 0;
-	float totalResponseTime = 0;
-
-	print("\n--- Hasil Penjadwalan Round Robin (Quantum =", q, ") ---\n");
-	print("------------------------------------------------------------------------------------------------\n");
-	print("| PID | Arrival | Burst | Priority | Completion | Waiting | Turnaround | Response |\n");
-	print("------------------------------------------------------------------------------------------------\n");
-
-	for (const Process &p: processes)
-	{
-		totalWaitingTime += p.waitingTime;
-		totalResponseTime += p.responseTime;
-		totalTurnaroundTime += p.turnaroundTime;
-
-		std::cout << "| " << setw(3) << p.id
-                  << " | " << setw(7) << p.arrivalTime
-                  << " | " << setw(5) << p.burstTime
-                  << " | " << setw(8) << p.priority
-                  << " | " << setw(10) << p.completionTime
-                  << " | " << setw(7) << p.waitingTime
-                  << " | " << setw(10) << p.turnaroundTime
-                  << " | " << setw(8) << p.responseTime << " |\n";
-	}
-
-	print("------------------------------------------------------------------------------------------------\n");
-
-	cout << fixed << setprecision(2);
-	print("Rata-rata Waktu Tunggu (Average Waiting Time):", totalWaitingTime / n, '\n');
-	print("Rata-rata Waktu Putar (Average Turnaround Time):",totalTurnaroundTime / n, '\n');
-	print("Rata-rata Waktu Respons (Average Response Time): ", totalResponseTime / n, '\n');
-
-	float totalTime = ct - processes[0].arrivalTime;
-
-	if (totalTime > 0) print("Throughput:", static_cast<float>(n) / totalTime, "proses/unit waktu\n");
-	else print("Throughput: N/A\n");
-}
+};
 
 
 int main()
@@ -182,7 +203,11 @@ int main()
         processes.emplace_back(i + 1, arrival, burst);
     }
 
-    runRoundRobin(processes, quantum);
+    RoundRobinScheduler scheduler(processes, quantum);
+
+	scheduler.run();
+
+	scheduler.printResult();
 
     return 0;
 }
